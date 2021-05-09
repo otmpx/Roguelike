@@ -7,15 +7,15 @@ public class Player : MonoBehaviour
 	private Rigidbody2D rb;
 	private Animator anim;
 	public Camera cam;
-	private bool facingLeft = false;
-	private bool animLock = false;
+	public bool animLock = false;
 	public float moveSpeed;
+	public float jumpSpeed;
 	public float dashSpeed;
 
-	public Vector2 mousePos;
+	private Vector2 mousePos;
 	private Vector2 moveDir;
 
-	public enum State { Idle, Walk, Jump, Dash, Blink }
+	public enum State { Idle, Walk, Jump, Falling, Dash, Blink }
 	public static State state;
 	private void Start()
 	{
@@ -30,25 +30,30 @@ public class Player : MonoBehaviour
 		anim.Play(state.ToString());
 		#region Input
 		mousePos = cam.ScreenToWorldPoint(Input.mousePosition);
-		moveDir = new Vector2(Input.GetAxisRaw("Horizontal"), 0);
+		moveDir = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
 
-		#endregion
-
-		#region Animation
 		float animDir = mousePos.x - rb.position.x;
+		float moveX = moveDir.x;
+		float moveY = moveDir.y;
 		anim.SetFloat("AnimDir", animDir);
+		anim.SetFloat("AnimMvt", moveX);
 
-		float animMvt = moveDir.x;
-		anim.SetFloat("AnimMvt", animMvt);
-
-		if (moveDir.sqrMagnitude == 0f)
+		if (moveX == 0f)
 		{
 			state = State.Idle;
 		}
-		else if (moveDir.sqrMagnitude > 0f)
+		else if (moveX == 1f || moveX == -1f)
 		{
 			state = State.Walk;
 			// Create reversed animation for walking backwards
+		}
+		if (moveY == 1f)
+		{
+			state = State.Jump;
+		}
+		if (Input.GetKeyDown(KeyCode.Space))
+		{
+			state = State.Dash;
 		}
 		#endregion
 
@@ -59,6 +64,8 @@ public class Player : MonoBehaviour
 			case State.Walk:
 				break;
 			case State.Jump:
+				break;
+			case State.Falling:
 				break;
 			case State.Dash:
 				break;
@@ -77,9 +84,12 @@ public class Player : MonoBehaviour
 				rb.velocity = moveDir * moveSpeed;
 				break;
 			case State.Jump:
+				rb.velocity = new Vector2(moveDir.x * moveSpeed, moveDir.y * jumpSpeed);
+				break;
+			case State.Falling:
 				break;
 			case State.Dash:
-				rb.velocity = moveDir * dashSpeed;
+				rb.velocity = new Vector2(moveDir.x * dashSpeed, 0);
 				break;
 			case State.Blink:
 				break;
